@@ -12,37 +12,90 @@ class EExcelView extends CGridView
 {
     public $i18nCategory = "EExcelView.t";
     public $behaviors=array();
-    //Document properties
+    // Document properties
+
+    /**
+     * The creator of the document
+     * @var string
+     */
     public $creator;
+    /**
+     * Title of the document
+     * @var string|null
+     */
     public $title = null;
+    /**
+     * Spreadsheet Subject
+     * @var string
+     */
     public $subject = 'Subject';
+    /**
+     * Spreadsheet Description
+     * @var string
+     */
     public $description = '';
+    /**
+     * Spreadsheet Categories
+     * @var string
+     */
     public $category = '';
+    /**
+     * Whether the cells are auto width
+     * @var bool
+     */
+    public $autoWidth = true;
+
+    /**
+     * The format the file will be created in.
+     * See the $writerTypes array for the full list of valid values
+     * @var string
+     */
+    public $exportType = self::EXPORT_TYPE_EXCEL5;
+
+    /**
+     * if needed, disable paging to export all data
+     * @var bool
+     */
+    public $disablePaging = true;
+
+    /**
+     * The filename to export to
+     * @var string|null
+     */
+    public $filename = null;
+
+    /**
+     * Stream output to browser
+     * @var bool
+     * @var PHPExcel The PHPExcel object
+     */
+    public $stream = true;
 
     /**
      * @var PHPExcel The PHPExcel object
      */
     public $objPHPExcel = null;
     public $libPath = 'application.extensions.phpexcel.Classes.PHPExcel'; //the path to the PHP excel lib
-
-    //config
-    public $autoWidth = true;
-    public $exportType = self::EXPORT_TYPE_EXCEL5;
-    public $disablePaging = true;
-    public $filename = null; //export FileName
-    public $stream = true; //stream to browser
     const GRID_MODE_GRID = 'grid';
     const GRID_MODE_EXPORT = 'export';
+    /**
+     * GET variable name which contains thegrid mode
+     * @var string
+     */
+    /**
+     * Whether to display grid ot export it to selected format. Possible values(grid, export)
+     * @var string
+     */
     public $grid_mode; //Whether to display grid ot export it to selected format. Possible values(grid, export)
     public $grid_mode_var='grid_mode'; //GET var for the grid mode
 
-    //buttons config
+    // buttons config
     public $exportButtonsCSS = 'summary';
     public $exportButtons = array(self::EXPORT_TYPE_EXCEL2007);
     public $exportText;
     public $exportPageSize=null;
 
-    //callbacks
+    // callbacks
     public $onRenderHeaderCell = null;
     public $onRenderDataCell = null;
     public $onRenderFooterCell = null;
@@ -64,17 +117,17 @@ class EExcelView extends CGridView
      * @var array<string,array{Content-type:string,extension:string,caption:string}>
      */
     public $mimeTypes = array(
-            self::EXPORT_TYPE_EXCEL5	=> array(
+            self::EXPORT_TYPE_EXCEL5    => array(
                     'Content-type'=>'application/vnd.ms-excel',
                     'extension'=>'xls',
                     'caption'=>'Excel(*.xls)',
             ),
-            self::EXPORT_TYPE_EXCEL2007	=> array(
+            self::EXPORT_TYPE_EXCEL2007    => array(
                     'Content-type'=>'application/vnd.ms-excel',
                     'extension'=>'xlsx',
                     'caption'=>'Excel(*.xlsx)',
             ),
-            self::EXPORT_TYPE_PDF		=>array(
+            self::EXPORT_TYPE_PDF        =>array(
                     'Content-type'=>'application/pdf',
                     'extension'=>'pdf',
                     'caption'=>'PDF(*.pdf)',
@@ -84,7 +137,7 @@ class EExcelView extends CGridView
                     'extension'=>'html',
                     'caption'=>'HTML(*.html)',
             ),
-            self::EXPORT_TYPE_CSV		=>array(
+            self::EXPORT_TYPE_CSV        =>array(
                     'Content-type'=>'application/csv',
                     'extension'=>'csv',
                     'caption'=>'CSV(*.csv)',
@@ -106,7 +159,7 @@ class EExcelView extends CGridView
      *
      * One of:
      *     PHPExcel_Settings::PDF_RENDERER_TCPDF;
-     * 	   PHPExcel_Settings::PDF_RENDERER_DOMPDF
+     *        PHPExcel_Settings::PDF_RENDERER_DOMPDF
      *     PHPExcel_Settings::PDF_RENDERER_MPDF
     */
     public $pdfRenderer;
@@ -192,8 +245,9 @@ class EExcelView extends CGridView
             $this->objPHPExcel->getProperties()->setSubject($this->subject);
             $this->objPHPExcel->getProperties()->setDescription($this->description);
             $this->objPHPExcel->getProperties()->setCategory($this->category);
-        } else
+        } else {
             parent::init();
+        }
     }
 
     private function setupSheet() {
@@ -237,16 +291,19 @@ class EExcelView extends CGridView
                 $head = $column->header;
             } elseif($column->header===null && isset($column->name))
             {
-                if($column->grid->dataProvider instanceof CActiveDataProvider)
+                if($column->grid->dataProvider instanceof CActiveDataProvider) {
                     $head = $column->grid->dataProvider->model->getAttributeLabel($column->name);
-                else
+                } else {
                     $head = $column->name;
-            } else
-                $head =trim($column->header)!=='' ? $column->header : $column->grid->blankDisplay;
+                }
+            } else {
+                $head = trim($column->header) !== '' ? $column->header : $column->grid->blankDisplay;
+            }
 
             $cell = $objPHPExcel->getActiveSheet()->setCellValue($this->columnName($a).'1' ,strip_tags($head), true);
-            if(is_callable($this->onRenderHeaderCell))
+            if(is_callable($this->onRenderHeaderCell)) {
                 call_user_func_array($this->onRenderHeaderCell, array($cell, $head));
+            }
         }
         // Add filter
         //$objPHPExcel->getActiveSheet()->setAutoFilter('B1:'.$this->columnName($a).'1');
@@ -309,10 +366,10 @@ class EExcelView extends CGridView
         $hasCallableRenderDataCell=is_callable($this->onRenderDataCell);
         $activeSheet=$this->objPHPExcel->getActiveSheet();
         $app=Yii::app();
-		$urlBuilder=$app->getController();
-		if($urlBuilder===null) {
-    		$urlBuilder=$app;
-		}
+        $urlBuilder=$app->getController();
+        if($urlBuilder===null) {
+            $urlBuilder=$app;
+        }
         foreach($this->columns as /** @var CDataColumn $column */$column)
         {
             $url=null;
@@ -345,32 +402,32 @@ class EExcelView extends CGridView
                         {
                             $value=$column->value;
                             if($value!==null) {
-                            	$value=$this->evaluateExpression($value,array('data'=>$data,'row'=>$row))/1000.;
+                                $value=$this->evaluateExpression($value,array('data'=>$data,'row'=>$row))/1000.;
                             } elseif($column->name!==null) {
-                            	$value=CHtml::value($data,$column->name);
-                            	if($value!==null) {
-                            	    $value/=1000.;
-                            	}
+                                $value=CHtml::value($data,$column->name);
+                                if($value!==null) {
+                                    $value/=1000.;
+                                }
                             } elseif(is_numeric($value)) {
-                			    $value/=1000.;
-                			}
+                                $value/=1000.;
+                            }
                         }
                         break;
                         case 'datetime':
                         {
                             $value=$column->value;
                             if($value!==null) {
-                            	$value=$this->evaluateExpression($value,array('data'=>$data,'row'=>$row));
+                                $value=$this->evaluateExpression($value,array('data'=>$data,'row'=>$row));
                             } elseif($column->name!==null) {
                                 $value=CHtml::value($data,$column->name);
                             }
 
-                			if(strval($value)!==''&&!is_numeric($value)) {
-                			    $value=Utils::convertDbDateTimeToTime($value);
-                			}
-                			//if(Yii::app() instanceof CConsoleApplication) {
-                			//    print $column->name.":".$value.PHP_EOL;
-                			//}
+                            if(strval($value)!==''&&!is_numeric($value)) {
+                                $value=Utils::convertDbDateTimeToTime($value);
+                            }
+                            //if(Yii::app() instanceof CConsoleApplication) {
+                            //    print $column->name.":".$value.PHP_EOL;
+                            //}
                             if(is_numeric( $value )) {
                                 $value=(new DateTime())->setTimestamp( $value );
                             }
@@ -637,13 +694,14 @@ class EExcelView extends CGridView
      *
      * @param int $index
      * @return string
+     * @throws Exception
      */
     public function columnName($index)
     {
         --$index;
         if($index >= 0 && $index < 26)
             return chr(ord('A') + $index);
-        else if ($index > 25)
+        elseif ($index > 25)
             return ($this->columnName($index / 26)).($this->columnName($index%26 + 1));
         else
             throw new Exception("Invalid Column # ".($index + 1));
@@ -656,7 +714,7 @@ class EExcelView extends CGridView
         {
             if(is_array($button)&&array_key_exists($key,$this->mimeTypes)) {
                 $item=CMap::mergeArray($this->mimeTypes[$key], $button);
-            } else if(array_key_exists($button,$this->mimeTypes)) {
+            } elseif(array_key_exists($button,$this->mimeTypes)) {
                 $item=$this->mimeTypes[$button];
             } else {
                 continue; // Skip this button.
@@ -713,18 +771,18 @@ class EExcelFormatter {
         return $value;
     }
 
-	public function format($value,$type)
-	{
-	    if(!is_string($type)) {
+    public function format($value,$type)
+    {
+        if(!is_string($type)) {
             $method='format'.$type['type'];
-	    } else {
-    		$method='format'.$type;
-	    }
-		if(method_exists($this,$method))
-			return $this->$method($value);
-		else
+        } else {
+            $method='format'.$type;
+        }
+        if(method_exists($this,$method))
+            return $this->$method($value);
+        else
             return $this->formatter->format($value,$type);
-	}
+    }
 
     /**
      * Proxy implementation
